@@ -1,0 +1,162 @@
+<mujoco model="mecanum_lidar">
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true" settotalmass="5"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="RK4" iterations="80" tolerance="1e-8"/>
+  <size nconmax="4000" njmax="2000"/>
+
+  <default>
+    <joint limited="false" damping="0.2"/>
+    <geom friction="1.2 0.02 0.005" rgba="0.8 0.8 0.8 1" contype="1" conaffinity="1"/>
+    <motor ctrllimited="true" ctrlrange="-6 6" gear="1"/>
+  </default>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.45 0.55 0.7" rgb2="0.1 0.15 0.2" width="512" height="512"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.85 0.85 0.85" rgb2="0.65 0.65 0.65" width="512" height="512"/>
+    <material name="floor" texture="grid" texrepeat="8 8" rgba="1 1 1 1" shininess="0.05"/>
+    <material name="base" rgba="0.15 0.35 0.85 1"/>
+    <material name="wheel" rgba="0.08 0.08 0.08 1"/>
+    <material name="roller" rgba="0.15 0.15 0.15 1"/>
+    <material name="ob_red" rgba="0.9 0.2 0.2 1"/>
+    <material name="ob_green" rgba="0.2 0.8 0.3 1"/>
+    <material name="ob_yellow" rgba="0.98 0.85 0.2 1"/>
+  </asset>
+
+  <worldbody>
+    <!-- Floor -->
+    <geom name="floor" type="plane" size="5 5 0.1" material="floor" rgba="1 1 1 1"/>
+
+    <!-- Arena walls -->
+    <body name="arena" pos="0 0 0">
+      <geom name="wall_xp" type="box" size="0.05 2.5 0.30" pos="2.45 0 0.30" rgba="0.8 0.8 0.9 1"/>
+      <geom name="wall_xn" type="box" size="0.05 2.5 0.30" pos="-2.45 0 0.30" rgba="0.8 0.8 0.9 1"/>
+      <geom name="wall_yp" type="box" size="2.5 0.05 0.30" pos="0 2.45 0.30" rgba="0.8 0.8 0.9 1"/>
+      <geom name="wall_yn" type="box" size="2.5 0.05 0.30" pos="0 -2.45 0.30" rgba="0.8 0.8 0.9 1"/>
+    </body>
+
+    <!-- Obstacles -->
+    <body name="obstacles" pos="0 0 0">
+      <geom name="obs1" type="cylinder" size="0.20 0.30" pos="1.2 0.0 0.30" material="ob_red"/>
+      <geom name="obs2" type="cylinder" size="0.15 0.30" pos="-1.0 -1.0 0.30" material="ob_green"/>
+      <geom name="obs3" type="cylinder" size="0.10 0.30" pos="0.8 1.2 0.30" material="ob_yellow"/>
+    </body>
+
+    <!-- Robot -->
+    <body name="base" pos="0 0 0.105">
+      <freejoint/>
+      <geom name="base_geom" type="box" size="0.20 0.17 0.04" material="base"/>
+
+      <!-- LIDAR ray sites (rangefinder shoots along site +Z, so we rotate it into XY with euler="0 90 yaw") -->
+      <site name="lidar_000" pos="0.12 0 0.07" size="0.003" euler="0 90 0"/>
+      <site name="lidar_030" pos="0.12 0 0.07" size="0.003" euler="0 90 30"/>
+      <site name="lidar_060" pos="0.12 0 0.07" size="0.003" euler="0 90 60"/>
+      <site name="lidar_090" pos="0.12 0 0.07" size="0.003" euler="0 90 90"/>
+      <site name="lidar_120" pos="0.12 0 0.07" size="0.003" euler="0 90 120"/>
+      <site name="lidar_150" pos="0.12 0 0.07" size="0.003" euler="0 90 150"/>
+      <site name="lidar_180" pos="0.12 0 0.07" size="0.003" euler="0 90 180"/>
+      <site name="lidar_210" pos="0.12 0 0.07" size="0.003" euler="0 90 210"/>
+      <site name="lidar_240" pos="0.12 0 0.07" size="0.003" euler="0 90 240"/>
+      <site name="lidar_270" pos="0.12 0 0.07" size="0.003" euler="0 90 270"/>
+      <site name="lidar_300" pos="0.12 0 0.07" size="0.003" euler="0 90 300"/>
+      <site name="lidar_330" pos="0.12 0 0.07" size="0.003" euler="0 90 330"/>
+
+      <!-- Wheel geometry params:
+           wheel radius=0.06, thickness=0.02 (visual only)
+           mecanum rollers are collision geoms (capsules), angled +/-45 deg in XZ plane -->
+      <!-- helper numbers embedded directly into fromto:
+           r0=0.045 (roller center radius), h=0.028, d = (±1,0,1)/sqrt(2) => h/sqrt(2)=0.0198 -->
+
+      <!-- Front-left (left wheels: +45 orientation) -->
+      <body name="wheel_fl" pos="0.20 0.17 -0.043">
+        <joint name="joint_fl" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom name="wheel_fl_vis" type="cylinder" size="0.06 0.02" euler="-90 0 0" material="wheel"
+              contype="0" conaffinity="0"/>
+        <!-- 4 rollers -->
+        <geom name="fl_r_front"  type="capsule" fromto="0.0252 0  0.0198   0.0648 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fl_r_back"   type="capsule" fromto="-0.0648 0  0.0198  -0.0252 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fl_r_top"    type="capsule" fromto="-0.0198 0  0.0648   0.0198 0  0.0252" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fl_r_bottom" type="capsule" fromto="-0.0198 0 -0.0252   0.0198 0 -0.0648" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+      </body>
+
+      <!-- Front-right (right wheels: mirrored -45 orientation) -->
+      <body name="wheel_fr" pos="0.20 -0.17 -0.043">
+        <joint name="joint_fr" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom name="wheel_fr_vis" type="cylinder" size="0.06 0.02" euler="-90 0 0" material="wheel"
+              contype="0" conaffinity="0"/>
+        <geom name="fr_r_front"  type="capsule" fromto="0.0648 0  0.0198   0.0252 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fr_r_back"   type="capsule" fromto="-0.0252 0  0.0198  -0.0648 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fr_r_top"    type="capsule" fromto="0.0198 0  0.0648  -0.0198 0  0.0252" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="fr_r_bottom" type="capsule" fromto="0.0198 0 -0.0252  -0.0198 0 -0.0648" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+      </body>
+
+      <!-- Rear-left (left wheels: +45 orientation) -->
+      <body name="wheel_rl" pos="-0.20 0.17 -0.043">
+        <joint name="joint_rl" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom name="wheel_rl_vis" type="cylinder" size="0.06 0.02" euler="-90 0 0" material="wheel"
+              contype="0" conaffinity="0"/>
+        <geom name="rl_r_front"  type="capsule" fromto="0.0252 0  0.0198   0.0648 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rl_r_back"   type="capsule" fromto="-0.0648 0  0.0198  -0.0252 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rl_r_top"    type="capsule" fromto="-0.0198 0  0.0648   0.0198 0  0.0252" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rl_r_bottom" type="capsule" fromto="-0.0198 0 -0.0252   0.0198 0 -0.0648" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+      </body>
+
+      <!-- Rear-right (right wheels: mirrored -45 orientation) -->
+      <body name="wheel_rr" pos="-0.20 -0.17 -0.043">
+        <joint name="joint_rr" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom name="wheel_rr_vis" type="cylinder" size="0.06 0.02" euler="-90 0 0" material="wheel"
+              contype="0" conaffinity="0"/>
+        <geom name="rr_r_front"  type="capsule" fromto="0.0648 0  0.0198   0.0252 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rr_r_back"   type="capsule" fromto="-0.0252 0  0.0198  -0.0648 0 -0.0198" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rr_r_top"    type="capsule" fromto="0.0198 0  0.0648  -0.0198 0  0.0252" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+        <geom name="rr_r_bottom" type="capsule" fromto="0.0198 0 -0.0252  -0.0198 0 -0.0648" size="0.010"
+              material="roller" friction="1.6 0.001 0.0001"/>
+      </body>
+
+    </body>
+  </worldbody>
+
+  <!-- Avoid base <-> wheels contacts (otherwise rollers can hit the chassis and explode) -->
+  <contact>
+    <exclude body1="base" body2="wheel_fl"/>
+    <exclude body1="base" body2="wheel_fr"/>
+    <exclude body1="base" body2="wheel_rl"/>
+    <exclude body1="base" body2="wheel_rr"/>
+  </contact>
+
+  <actuator>
+    <motor name="motor_fl" joint="joint_fl"/>
+    <motor name="motor_fr" joint="joint_fr"/>
+    <motor name="motor_rl" joint="joint_rl"/>
+    <motor name="motor_rr" joint="joint_rr"/>
+  </actuator>
+
+  <!-- 2D lidar via rangefinders -->
+  <sensor>
+    <rangefinder name="lidar_000" site="lidar_000"/>
+    <rangefinder name="lidar_030" site="lidar_030"/>
+    <rangefinder name="lidar_060" site="lidar_060"/>
+    <rangefinder name="lidar_090" site="lidar_090"/>
+    <rangefinder name="lidar_120" site="lidar_120"/>
+    <rangefinder name="lidar_150" site="lidar_150"/>
+    <rangefinder name="lidar_180" site="lidar_180"/>
+    <rangefinder name="lidar_210" site="lidar_210"/>
+    <rangefinder name="lidar_240" site="lidar_240"/>
+    <rangefinder name="lidar_270" site="lidar_270"/>
+    <rangefinder name="lidar_300" site="lidar_300"/>
+    <rangefinder name="lidar_330" site="lidar_330"/>
+  </sensor>
+</mujoco>

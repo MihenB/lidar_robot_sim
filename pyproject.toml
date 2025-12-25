@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mecanum-lidar-sim"
+version = "0.1.0"
+description = "MuJoCo simulation of a mecanum-wheel robot with a simple LIDAR and keyboard control"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Your Name" }
+]
+license = { text = "UNLICENSED" }
+dependencies = [
+  "fastapi>=0.127.0",
+  "mujoco>=3.0.0",
+  "numpy>=1.23",
+  "uvicorn>=0.29",
+  "websockets>=11",
+]
+
+[project.scripts]
+mecanum-lidar = "mecanum_lidar.__main__:entry"
+
+[tool.setuptools]
+packages = { find = { where = ["."], include = ["mecanum_lidar*"], exclude = ["tests*"] } }
+
+[tool.setuptools.package-data]
+mecanum_lidar = ["models/*.xml"]
